@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Division Faculty Performance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #553178;
+    --navy-mid: #3d2259;
+    --blue: #00867B;
+    --blue-light: #00a896;
+    --purple: #553178;
+    --green: #00556f;
+    --amber: #ebab21;
+    --amber-fg: #8a5e00;
+    --red: #dc2626;
+    --bg: #f5f5f7;
+    --bg-secondary: #ebebed;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --border-strong: #b0b0b0;
+    --text: #1a1a1a;
+    --text-muted: #767676;
+    --text-light: #aaaaaa;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,.12);
+    --radius: 8px;
+    --sidebar-w: 290px;
+  }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+  /* Sidebar */
+  #sidebar {
+    width: var(--sidebar-w); min-height: 100vh; background: #553178;
+    display: flex; flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100;
+  }
+  #sidebar .brand {
+    padding: 24px 20px 20px;
+    background: #553178;
+    border-bottom: 3px solid #ebab21;
+  }
+  #sidebar .brand h1 { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; line-height: 1.3; }
+  #sidebar .brand p { color: rgba(255,255,255,.6); font-size: 12px; margin-top: 4px; }
+  #sidebar .division-name {
+    color: #fff; font-size: 14px; font-weight: 600; margin-top: 6px;
+    outline: none; cursor: text; border-bottom: 1px dashed rgba(255,255,255,.4);
+    display: inline-block; min-width: 60px;
+  }
+  #sidebar .division-name:focus { border-bottom-color: #ebab21; }
+  #sidebar .chief-label { color: rgba(255,255,255,.5); font-size: 11px; margin-top: 10px; display: block; }
+  #sidebar .chief-name {
+    color: rgba(255,255,255,.85); font-size: 13px; font-weight: 500; margin-top: 3px;
+    outline: none; cursor: text; border-bottom: 1px dashed rgba(255,255,255,.25);
+    display: inline-block; min-width: 60px;
+  }
+  #sidebar .chief-name:focus { border-bottom-color: #ebab21; color: #fff; }
+  #sidebar nav { padding: 16px 14px; flex: 1; }
+  .nav-label { color: rgba(255,255,255,.38); font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; padding: 8px 8px 4px; }
+  .nav-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px;
+    border: none; background: transparent; color: rgba(255,255,255,.75); font-size: 14px; font-weight: 500;
+    cursor: pointer; border-radius: 6px; text-align: left; transition: all .15s;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .nav-btn.active { background: #00867B; color: #fff; }
+  .nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
+  .nav-divider { border: none; border-top: 1px solid rgba(255,255,255,.1); margin: 8px 0; }
+  #sidebar footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.1); }
+  #sidebar footer p { color: rgba(255,255,255,.35); font-size: 12px; }
+
+  /* Main */
+  #main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Topbar */
+  #topbar {
+    background: #fff; border-bottom: 1px solid var(--border); padding: 12px 28px;
+    display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 50;
+    box-shadow: var(--shadow);
+  }
+  #topbar h2 { font-size: 16px; font-weight: 600; flex: 1; color: var(--text); }
+  .topbar-controls { display: flex; align-items: center; gap: 10px; }
+  select.ctrl, input.ctrl {
+    padding: 6px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; background: var(--bg); color: var(--text); cursor: pointer; outline: none;
+  }
+  select.ctrl:focus, input.ctrl:focus { border-color: var(--blue); }
+  .btn {
+    padding: 7px 14px; border-radius: 6px; border: none; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--blue); color: #fff; border: 1px solid var(--blue); }
+  .btn-primary:hover { background: #006b62; border-color: #006b62; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
+  .btn-outline:hover { background: var(--bg-secondary); }
+  .btn-navy { background: var(--navy); color: #fff; border: 1px solid var(--navy); }
+  .btn-navy:hover { background: var(--navy-mid); border-color: var(--navy-mid); }
+
+  /* Content */
+  #content { padding: 28px; flex: 1; }
+
+  /* View panels */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Composition card */
+  .composition-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 28px; margin-bottom: 24px; display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: center; }
+  .composition-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 16px; grid-column: 1 / -1; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .composition-donut { position: relative; width: 160px; height: 160px; }
+  .composition-donut canvas { width: 160px !important; height: 160px !important; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .donut-center .dc-num { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+  .donut-center .dc-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); margin-top: 3px; }
+  .stage-legend { display: flex; flex-direction: column; gap: 10px; }
+  .stage-legend-item { display: flex; align-items: center; gap: 10px; }
+  .stage-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .stage-legend-label { font-size: 13px; color: var(--text); flex: 1; }
+  .stage-legend-bar-wrap { flex: 2; background: var(--bg); border-radius: 4px; height: 8px; overflow: hidden; }
+  .stage-legend-bar { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .stage-legend-count { font-size: 13px; font-weight: 700; color: var(--text); min-width: 20px; text-align: right; }
+
+  /* Stat cards */
+  .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .indiv-main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 24px; align-items: stretch; }
+  .cards-grid.indiv-2x2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); margin-bottom: 0; height: 100%; }
+  .cards-grid.indiv-2x2 .stat-card { height: 100%; }
+  .stat-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; border-top: 3px solid transparent; position: relative; overflow: hidden;
+  }
+  .stat-card.pub { border-top-color: var(--blue); }
+  .stat-card.pres { border-top-color: var(--amber); }
+  .stat-card.grant { border-top-color: var(--green); }
+  .stat-card.mentee { border-top-color: var(--purple); }
+  .stat-card .label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-card .value { font-size: 32px; font-weight: 500; line-height: 1.2; color: var(--text); }
+  .stat-card .sub { font-size: 12px; margin-top: 4px; color: var(--text-muted); }
+  .stat-card .trend { font-size: 12px; margin-top: 4px; }
+  .trend.up { color: var(--blue); }
+  .trend.down { color: var(--amber-fg); }
+  .trend.flat { color: var(--text-muted); }
+
+  /* Charts */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+  .chart-card.wide { grid-column: 1 / -1; }
+  .chart-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 16px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; display: flex; justify-content: space-between; align-items: center; }
+  .chart-card h3 span { font-size: 11px; font-weight: 500; color: var(--text-light); text-transform: none; letter-spacing: 0; }
+  canvas { max-height: 280px; }
+
+  /* Faculty table */
+  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+  .table-card .table-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .table-card .table-header h3 { font-size: 13px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 8px 16px; text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); background: var(--card); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .faculty-row { cursor: pointer; }
+  .faculty-row:hover td { background: rgba(0,134,123,.06); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .badge-asst { background: rgba(0,134,123,.12); color: #00504a; }
+  .badge-assoc { background: rgba(85,49,120,.12); color: #3b2155; }
+  .badge-prof { background: rgba(0,85,111,.12); color: #003547; }
+  .badge-dist { background: rgba(235,171,33,.15); color: #7a5800; }
+  .badge-em { background: var(--bg-secondary); color: var(--text-muted); }
+  .badge-inactive { background: #fee2e2; color: #991b1b; }
+  .delta-up { color: var(--blue); font-weight: 600; }
+  .delta-down { color: var(--amber-fg); font-weight: 600; }
+
+  /* Individual faculty view */
+  .faculty-hero { background: #553178; border: 1px solid #3d2259; border-radius: var(--radius); padding: 24px 28px; color: #fff; margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .faculty-hero .info h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .faculty-hero .info p { color: rgba(255,255,255,.6); font-size: 13px; }
+  .faculty-hero .stage-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); padding: 5px 14px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .faculty-hero .meta { display: flex; gap: 32px; margin-top: 16px; }
+  .faculty-hero .meta-item { text-align: center; }
+  .faculty-hero .meta-item .mv { font-size: 26px; font-weight: 500; }
+  .faculty-hero .meta-item .ml { font-size: 10px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+  /* Year nav */
+  .year-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .year-tab { padding: 5px 13px; border-radius: 4px; border: 1px solid var(--border); background: var(--card); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text-muted); transition: all .15s; }
+  .year-tab.active { background: #553178; color: #fff; border-color: #553178; }
+  .year-tab:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+
+  /* Stage timeline */
+  .timeline { display: flex; gap: 0; margin-bottom: 24px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .timeline-item { flex: 1; padding: 14px 16px; text-align: center; border-right: 1px solid var(--border); position: relative; }
+  .timeline-item:last-child { border-right: none; }
+  .timeline-item .ty { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+  .timeline-item .ts { font-size: 12px; font-weight: 600; }
+  .timeline-item.current { background: var(--navy); }
+  .timeline-item.current .ty, .timeline-item.current .ts { color: #fff; }
+
+  /* Editable cells */
+  [contenteditable="true"] { outline: none; border-radius: 4px; transition: background .1s; }
+  [contenteditable="true"]:hover { background: rgba(0,134,123,.06); }
+  [contenteditable="true"]:focus { background: rgba(0,134,123,.1); box-shadow: inset 0 0 0 1px var(--blue); }
+
+
+  /* Import */
+  #import-drop-zone:hover { border-color: var(--blue) !important; background: rgba(0,134,123,.04); }
+  #importPreviewTable th { background: #553178; color: #fff; padding: 6px 10px; font-size: 11px; font-weight: 500; text-align: left; white-space: nowrap; position: sticky; top: 0; }
+  #importPreviewTable td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+  #importPreviewTable tr:last-child td { border-bottom: none; }
+
+  /* Modals */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 560px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .modal h2 { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+  .modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); }
+  .form-group input, .form-group select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* PDF report overlay */
+  #pdf-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 300; display: none; align-items: center; justify-content: center; }
+  #pdf-overlay.open { display: flex; }
+  #pdf-report {
+    background: #fff; width: 800px; max-height: 90vh; overflow-y: auto;
+    border-radius: 12px; padding: 48px; box-shadow: var(--shadow-lg); position: relative;
+  }
+  #pdf-report .report-header { background: #553178; margin: -48px -48px 28px; padding: 36px 48px 28px; border-bottom: 3px solid #ebab21; }
+  #pdf-report .report-header h1 { font-size: 22px; font-weight: 600; color: #fff; }
+  #pdf-report .report-header p { color: rgba(255,255,255,.65); font-size: 13px; margin-top: 4px; }
+  #pdf-report .report-section { margin-bottom: 28px; }
+  #pdf-report .report-section h2 { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; border-left: 3px solid #00867B; padding-left: 10px; margin-bottom: 14px; }
+  #pdf-report .report-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  #pdf-report .report-metric { background: #f5f5f7; border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; text-align: center; border-top: 3px solid transparent; }
+  #pdf-report .report-metric .rv { font-size: 28px; font-weight: 500; color: #1a1a1a; }
+  #pdf-report .report-metric .rl { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: #767676; margin-top: 2px; }
+  #pdf-report table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #pdf-report th { background: #553178; color: #fff; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 500; }
+  #pdf-report td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  #pdf-report tr:nth-child(even) td { background: #f8fafc; }
+  .pdf-close-btn { position: sticky; top: 8px; float: right; margin-bottom: -40px; }
+  #print-btn-bar { display: flex; gap: 10px; justify-content: center; padding: 16px 0 0; border-top: 1px solid var(--border); margin-top: 24px; }
+
+  @media print { body { background: #fff; } #sidebar, #topbar, .pdf-close-btn, #print-btn-bar { display: none !important; } #main { margin: 0; } #pdf-report { box-shadow: none; border-radius: 0; max-height: none; overflow: visible; } #pdf-overlay { position: static; background: none; display: block !important; } }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="brand">
+    <h1>Faculty Performance<br>Dashboard</h1>
+    <p>Division of</p>
+    <div class="division-name" contenteditable="true" id="divisionName">Pulmonary Medicine</div>
+    <span class="chief-label">Division Chief</span>
+    <div class="chief-name" contenteditable="true" id="chiefName">Dr. [Name]</div>
+  </div>
+  <nav>
+    <div class="nav-label">Views</div>
+    <button class="nav-btn active" onclick="showView('overview', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="17" rx="1"/></svg>
+      Division Overview
+    </button>
+    <button class="nav-btn" onclick="showView('individual', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Individual Faculty
+    </button>
+    <hr class="nav-divider">
+    <div class="nav-label">Actions</div>
+    <button class="nav-btn" onclick="openImport()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Import from Spreadsheet
+    </button>
+    <button class="nav-btn" onclick="openAddFaculty()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      Add Faculty
+    </button>
+    <button class="nav-btn" onclick="openEditData()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit Data
+    </button>
+    <button class="nav-btn" onclick="openPDFReport()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download PDF Report
+    </button>
+    <button class="nav-btn" onclick="downloadWithData()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save a Copy
+    </button>
+  </nav>
+  <footer>
+    <p id="lastSaved">All changes auto-saved</p>
+  </footer>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <!-- Topbar -->
+  <div id="topbar">
+    <h2 id="topbar-title">Division Overview</h2>
+    <div class="topbar-controls">
+      <select class="ctrl" id="yearSelect" onchange="onYearChange()"></select>
+      <select class="ctrl" id="facultySelect" onchange="onFacultyChange()" style="display:none">
+      </select>
+      <button class="btn btn-navy" onclick="openPDFReport()">⬇ Export Report</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- OVERVIEW VIEW -->
+    <div class="view active" id="view-overview">
+
+      <div class="composition-card" id="compositionCard">
+        <h3>Division Composition by Academic Appointment</h3>
+        <div class="composition-donut">
+          <canvas id="stageDonutChart"></canvas>
+          <div class="donut-center">
+            <div class="dc-num" id="donut-total"></div>
+            <div class="dc-lbl">Faculty</div>
+          </div>
+        </div>
+        <div class="stage-legend" id="stageLegend"></div>
+      </div>
+
+      <div class="cards-grid" id="overview-cards">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card" style="grid-column:1/2">
+          <h3>Faculty Reporting by Year <span>With data entered</span></h3>
+          <canvas id="facultyCountChart"></canvas>
+        </div>
+        <div class="chart-card" style="grid-column:2/-1">
+          <h3>Division Trends — All Metrics Over Time <span>Total across all faculty</span></h3>
+          <canvas id="divisionTrendChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Publications by Faculty <span id="pub-year-label"></span></h3>
+          <canvas id="pubBarChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Active Grants by Faculty <span id="grant-year-label"></span></h3>
+          <canvas id="grantBarChart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Faculty Roster</h3>
+          <span style="font-size:12px;color:var(--text-muted)">Click any row to view individual profile</span>
+        </div>
+        <table id="rosterTable">
+          <thead>
+            <tr>
+              <th>Faculty</th>
+              <th>Academic Appointment</th>
+              <th>Publications</th>
+              <th>Presentations</th>
+              <th>Active Grants</th>
+              <th>Mentees</th>
+              <th>YoY Pubs</th>
+            </tr>
+          </thead>
+          <tbody id="rosterBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INDIVIDUAL VIEW -->
+    <div class="view" id="view-individual">
+      <div class="faculty-hero" id="facultyHero"></div>
+
+
+      <div class="year-tabs" id="indivYearTabs"></div>
+
+      <div class="indiv-main-grid">
+        <div class="cards-grid indiv-2x2" id="indiv-cards"></div>
+        <div class="chart-card">
+          <h3>Individual Trends — All Metrics Over Time <span id="indiv-name-label"></span></h3>
+          <canvas id="indivTrendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header"><h3>Year-by-Year Detail</h3></div>
+        <table>
+          <thead>
+            <tr><th>Year</th><th>Academic Appointment</th><th>Publications</th><th>Presentations</th><th>Active Grants</th><th>Mentees</th></tr>
+          </thead>
+          <tbody id="indivTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="width:780px">
+    <button class="modal-close" onclick="closeModal('importModal')">✕</button>
+    <h2>Import from Spreadsheet</h2>
+
+    <!-- Step 1: Upload -->
+    <div id="import-step-1">
+      <p class="modal-sub">Export your spreadsheet as a <strong>CSV file</strong>, then upload it here. One row per faculty member per year.</p>
+      <div id="import-drop-zone" onclick="document.getElementById('csvFileInput').click()"
+        style="border:2px dashed var(--border);border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:16px">
+        <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVUpload(this)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p style="font-weight:600;font-size:14px;color:var(--text)">Click to upload a CSV file</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:4px">Exported from Excel or Google Sheets</p>
+      </div>
+      <div style="text-align:center">
+        <button class="btn btn-outline" onclick="downloadCSVTemplate()" style="font-size:12px">⬇ Download blank template</button>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px">Not sure how to format your spreadsheet? Download the template, fill it in, then upload it here.</p>
+      </div>
+    </div>
+
+    <!-- Step 2: Map columns + preview -->
+    <div id="import-step-2" style="display:none">
+      <p class="modal-sub">We detected these columns. Match each one to the right field — we've made our best guess.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px" id="importMappingGrid"></div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:8px">Preview <span id="importPreviewCount"></span></div>
+      <div style="overflow-x:auto;max-height:220px;border:1px solid var(--border);border-radius:6px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="importPreviewTable"></table>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(0,134,123,.07);border:1px solid rgba(0,134,123,.2);border-radius:6px;font-size:12px;color:#003a35">
+        <strong>Merge behavior:</strong> Faculty already in the dashboard will have new year data added. Existing year data will be updated. New faculty will be created.
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="importBack()">← Back</button>
+        <button class="btn btn-primary" onclick="confirmImport()">Import Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Faculty Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal" style="width:860px;max-width:95vw">
+    <button class="modal-close" onclick="closeModal('addModal')">✕</button>
+    <h2>Add Faculty Member</h2>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Full Name</label>
+        <input id="af-name" type="text" placeholder="">
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--text-muted)">Performance Data per Year</div>
+    <div id="af-years-rows"></div>
+    <div style="margin:6px 0 4px;display:flex;align-items:center;gap:8px">
+      <button class="btn btn-outline" style="font-size:12px;padding:5px 12px" onclick="showAFYearInput()">＋ Add year</button>
+      <span id="af-year-input-wrap" style="display:none;align-items:center;gap:6px">
+        <input type="number" id="af-year-input" min="2000" max="2050" placeholder="year" style="width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')addAFYear()">
+        <button class="btn btn-primary" style="font-size:12px;padding:5px 12px" onclick="addAFYear()">Add</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:5px 10px" onclick="hideAFYearInput()">✕</button>
+      </span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddFaculty()">Add Faculty</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Data Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal" style="width:680px">
+    <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+    <h2>Edit Faculty Data</h2>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Select Faculty</label>
+        <select id="edit-faculty-sel" onchange="loadEditRows()" class="ctrl" style="width:100%"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Year Left Institution</label>
+        <input type="number" id="edit-year-left" class="ctrl" min="1900" max="2100" placeholder="— still active —" style="width:170px"
+          onkeydown="if(event.key==='Enter')this.blur()">
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px" id="editTable">
+      <thead><tr>
+        <th style="padding:8px;text-align:left;background:var(--bg);font-size:11px">Year</th>
+        <th style="padding:8px;text-align:left;background:var(--bg);font-size:11px">Academic Appointment</th>
+        <th style="padding:8px;text-align:center;background:var(--bg);font-size:11px">Pubs</th>
+        <th style="padding:8px;text-align:center;background:var(--bg);font-size:11px">Pres</th>
+        <th style="padding:8px;text-align:center;background:var(--bg);font-size:11px">Grants</th>
+        <th style="padding:8px;text-align:center;background:var(--bg);font-size:11px">Mentees</th>
+        <th style="padding:8px;background:var(--bg)"></th>
+      </tr></thead>
+      <tbody id="editTableBody"></tbody>
+    </table>
+    <div style="margin:8px 0 4px;display:flex;align-items:center;gap:8px">
+      <button class="btn btn-outline" style="font-size:12px;padding:5px 12px" onclick="showEditYearInput()">＋ Add year</button>
+      <span id="ed-year-input-wrap" style="display:none;align-items:center;gap:6px">
+        <input type="number" id="ed-year-input" min="2000" max="2050" placeholder="year" style="width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')addEditYear()">
+        <button class="btn btn-primary" style="font-size:12px;padding:5px 12px" onclick="addEditYear()">Add</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:5px 10px" onclick="hideEditYearInput()">✕</button>
+      </span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditData()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Report Overlay -->
+<div id="pdf-overlay">
+  <div id="pdf-report">
+    <button class="btn btn-outline pdf-close-btn" onclick="closePDFReport()">✕ Close</button>
+    <div class="report-header">
+      <h1 id="rpt-title">Division of Pulmonary Medicine — Faculty Performance Report</h1>
+      <p id="rpt-subtitle"></p>
+    </div>
+    <div class="report-section">
+      <h2>Executive Summary</h2>
+      <p id="rpt-summary" style="font-size:13px;line-height:1.7;color:var(--text-muted)"></p>
+    </div>
+    <div class="report-section">
+      <h2>Division Totals — Most Recent Year</h2>
+      <div class="report-grid" id="rpt-metrics"></div>
+    </div>
+    <div class="report-section">
+      <h2>5-Year Trend Summary</h2>
+      <table id="rpt-trend-table">
+        <thead><tr><th>Year</th><th>Publications</th><th>Presentations</th><th>Active Grants</th><th>Mentees</th><th>Faculty Count</th></tr></thead>
+        <tbody id="rpt-trend-body"></tbody>
+      </table>
+    </div>
+    <div class="report-section">
+      <h2>Faculty Performance — Most Recent Year</h2>
+      <table id="rpt-faculty-table">
+        <thead><tr><th>Faculty</th><th>Academic Appointment</th><th>Pubs</th><th>Pres</th><th>Grants</th><th>Mentees</th></tr></thead>
+        <tbody id="rpt-faculty-body"></tbody>
+      </table>
+    </div>
+    <div class="report-section" id="rpt-highlights-section">
+      <h2>Notable Highlights</h2>
+      <ul id="rpt-highlights" style="font-size:13px;line-height:1.9;color:var(--text);padding-left:20px"></ul>
+    </div>
+    <div id="print-btn-bar">
+      <button class="btn btn-outline" onclick="closePDFReport()">Close</button>
+      <button class="btn btn-primary" onclick="printReport()">🖨 Print / Save as PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+// __DB_START__
+let db = {
+  years: [2023, 2024],
+  faculty: []
+};
+// __DB_END__
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentView = 'overview';
+let selectedYear = 2024;
+let selectedFacultyId = null;
+let selectedIndivYear = 2024;
+let charts = {};
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+const METRICS = ['publications','presentations','grants','mentees'];
+const METRIC_LABELS = { publications:'Publications', presentations:'Presentations', grants:'Active Grants', mentees:'Mentees' };
+const METRIC_COLORS = { publications:'#00867B', presentations:'#ebab21', grants:'#00556f', mentees:'#553178' };
+const STAGES = ['Assistant Professor','Associate Professor','Professor','Inactive'];
+
+function stageBadge(s) {
+  const map = { 'Assistant Professor':'badge-asst','Associate Professor':'badge-assoc','Professor':'badge-prof','Inactive':'badge-inactive' };
+  return `<span class="badge ${map[s]||'badge-asst'}">${s}</span>`;
+}
+
+function divisionTotal(year, metric) {
+  return db.faculty.filter(f => f.data[year]).reduce((sum, f) => sum + (f.data[year][metric] || 0), 0);
+}
+
+function facultyForYear(year) {
+  return db.faculty.filter(f => f.data[year]);
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function delta(current, prev) {
+  if (prev === undefined || prev === 0) return null;
+  return ((current - prev) / prev * 100).toFixed(0);
+}
+
+function trendArrow(d) {
+  if (d === null) return '';
+  const n = parseFloat(d);
+  if (n > 0) return `<span class="delta-up">▲ ${d}%</span>`;
+  if (n < 0) return `<span class="delta-down">▼ ${Math.abs(d)}%</span>`;
+  return `<span style="color:var(--text-muted)">— 0%</span>`;
+}
+
+function divisionYears() {
+  const s = new Set();
+  db.faculty.forEach(f => Object.keys(f.data).forEach(y => s.add(+y)));
+  return [...s].sort((a,b)=>a-b);
+}
+
+function facultyYears(f) {
+  return Object.keys(f.data).map(Number).sort((a,b)=>a-b);
+}
+
+function rebuildYearSelect() {
+  const sel = document.getElementById('yearSelect');
+  let years, cur;
+  if (currentView === 'individual') {
+    const f = db.faculty.find(x => x.id === selectedFacultyId);
+    years = f ? facultyYears(f) : divisionYears();
+    cur = selectedIndivYear;
+  } else {
+    years = divisionYears();
+    cur = selectedYear;
+  }
+  if (!years.length) { sel.innerHTML = '<option value="">No data</option>'; return; }
+  sel.innerHTML = years.map(y => `<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+  if (!years.includes(cur)) {
+    const latest = years[years.length-1];
+    sel.value = latest;
+    if (currentView === 'individual') selectedIndivYear = latest;
+    else selectedYear = latest;
+  }
+}
+
+// ── VIEW SWITCH ───────────────────────────────────────────────────────────────
+function showView(view, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  currentView = view;
+  const fsel = document.getElementById('facultySelect');
+  fsel.style.display = view === 'individual' ? '' : 'none';
+  document.getElementById('topbar-title').textContent = { overview:'Division Overview', individual:'Individual Faculty' }[view] || view;
+  rebuildYearSelect();
+  if (view === 'overview') renderOverview();
+  else renderIndividual();
+}
+
+function onYearChange() {
+  const v = parseInt(document.getElementById('yearSelect').value);
+  if (currentView === 'overview') { selectedYear = v; renderOverview(); }
+  else { selectedIndivYear = v; renderIndividual(); }
+}
+
+function onFacultyChange() {
+  selectedFacultyId = parseInt(document.getElementById('facultySelect').value);
+  const f = db.faculty.find(x => x.id === selectedFacultyId);
+  const fy = f ? facultyYears(f) : [];
+  selectedIndivYear = fy.length ? fy[fy.length-1] : selectedYear;
+  rebuildYearSelect();
+  renderIndividual();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function renderOverview() {
+  const allYears = divisionYears();
+  const year = allYears.includes(selectedYear) ? selectedYear : (allYears[allYears.length-1] || null);
+  if (!year) return;
+  const prevYear = allYears[allYears.indexOf(year) - 1] ?? null;
+
+  // Composition donut
+  const STAGE_COLORS = {
+    'Assistant Professor': '#00867B',
+    'Associate Professor': '#553178',
+    'Professor': '#00556f',
+    'Distinguished Professor': '#ebab21',
+    'Emeritus': '#94a3b8'
+  };
+  const stageCounts = {};
+  const yearFaculty = facultyForYear(year);
+  yearFaculty.forEach(f => {
+    const s = f.data[year]?.stage || 'Unknown';
+    stageCounts[s] = (stageCounts[s] || 0) + 1;
+  });
+  const stageOrder = ['Assistant Professor','Associate Professor','Professor','Distinguished Professor','Emeritus'];
+  const stageLabels = stageOrder.filter(s => stageCounts[s]);
+  const stageVals = stageLabels.map(s => stageCounts[s]);
+  const stageColors = stageLabels.map(s => STAGE_COLORS[s] || '#94a3b8');
+  const total = yearFaculty.length;
+
+  document.getElementById('donut-total').textContent = total;
+  destroyChart('stageDonut');
+  charts['stageDonut'] = new Chart(document.getElementById('stageDonutChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: stageLabels, datasets: [{ data: stageVals, backgroundColor: stageColors, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }] },
+    options: { responsive: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } } }
+  });
+  document.getElementById('stageLegend').innerHTML = stageLabels.map((s, i) => `
+    <div class="stage-legend-item">
+      <div class="stage-swatch" style="background:${stageColors[i]}"></div>
+      <div class="stage-legend-label">${s}</div>
+      <div class="stage-legend-bar-wrap"><div class="stage-legend-bar" style="width:${(stageVals[i]/total*100).toFixed(0)}%;background:${stageColors[i]}"></div></div>
+      <div class="stage-legend-count">${stageVals[i]}</div>
+    </div>`).join('');
+
+  // Cards
+  const cardDefs = [
+    { key:'publications', label:'Publications', cls:'pub', icon:'📄' },
+    { key:'presentations', label:'Presentations', cls:'pres', icon:'🎤' },
+    { key:'grants', label:'Active Grants', cls:'grant', icon:'💰' },
+    { key:'mentees', label:'Mentees', cls:'mentee', icon:'🎓' }
+  ];
+  const cardsEl = document.getElementById('overview-cards');
+  cardsEl.innerHTML = cardDefs.map(c => {
+    const val = divisionTotal(year, c.key);
+    const pval = prevYear ? divisionTotal(prevYear, c.key) : null;
+    const d = pval !== null ? delta(val, pval) : null;
+    const tclass = d === null ? 'flat' : parseFloat(d) >= 0 ? 'up' : 'down';
+    const ttext = d === null ? 'No prior year' : `${parseFloat(d) >= 0 ? '▲' : '▼'} ${Math.abs(d)}% vs ${prevYear}`;
+    return `<div class="stat-card ${c.cls}" data-icon="${c.icon}">
+      <div class="label">${c.label}</div>
+      <div class="value">${val}</div>
+      <div class="trend ${tclass}">${ttext}</div>
+    </div>`;
+  }).join('');
+
+  // Faculty count chart
+  destroyChart('facultyCount');
+  const fcCounts = allYears.map(y => facultyForYear(y).length);
+  const maxCount = Math.max(...fcCounts, 1);
+  charts['facultyCount'] = new Chart(document.getElementById('facultyCountChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: allYears,
+      datasets: [{
+        label: 'Faculty reporting',
+        data: fcCounts,
+        backgroundColor: allYears.map(y => y === year ? '#553178' : 'rgba(85,49,120,.25)'),
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} faculty` } }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: Math.ceil(maxCount * 1.3) || 5,
+          ticks: { stepSize: 1, precision: 0 },
+          grid: { color: '#f0f0f0' }
+        },
+        x: { grid: { display: false } }
+      },
+      onClick: (e, els) => {
+        if (els.length) {
+          selectedYear = allYears[els[0].index];
+          document.getElementById('yearSelect').value = selectedYear;
+          renderOverview();
+        }
+      }
+    }
+  });
+
+  // Division trend chart
+  destroyChart('divisionTrend');
+  const ctx1 = document.getElementById('divisionTrendChart').getContext('2d');
+  charts['divisionTrend'] = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: allYears,
+      datasets: METRICS.map(m => ({
+        label: METRIC_LABELS[m],
+        data: allYears.map(y => divisionTotal(y, m)),
+        borderColor: METRIC_COLORS[m],
+        backgroundColor: METRIC_COLORS[m] + '18',
+        tension: .4, fill: true, pointRadius: 5, pointHoverRadius: 7, borderWidth: 2.5
+      }))
+    },
+    options: { responsive: true, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  // Bar charts
+  const yearLabel = `(${year})`;
+  document.getElementById('pub-year-label').textContent = yearLabel;
+  document.getElementById('grant-year-label').textContent = yearLabel;
+  const barFaculty = facultyForYear(year);
+  const names = barFaculty.map(f => f.name.trim().split(' ').pop());
+
+  destroyChart('pubBar');
+  const ctx2 = document.getElementById('pubBarChart').getContext('2d');
+  charts['pubBar'] = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: names,
+      datasets: [{ label: 'Publications', data: barFaculty.map(f => f.data[year]?.publications || 0),
+        backgroundColor: '#00867B', borderRadius: 6, borderSkipped: false }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+    }
+  });
+
+  destroyChart('grantBar');
+  const ctx3 = document.getElementById('grantBarChart').getContext('2d');
+  charts['grantBar'] = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: names,
+      datasets: [{ label: 'Active Grants', data: barFaculty.map(f => f.data[year]?.grants || 0),
+        backgroundColor: '#00556f', borderRadius: 6, borderSkipped: false }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+    }
+  });
+
+  // Roster table
+  document.getElementById('rosterBody').innerHTML = db.faculty.map(f => {
+    const d = f.data[year] || {};
+    const prevD = prevYear ? (f.data[prevYear] || {}) : {};
+    const pubD = prevYear ? delta(d.publications, prevD.publications) : null;
+    return `<tr class="faculty-row" onclick="selectFacultyAndView(${f.id})">
+      <td><strong>${f.name}</strong></td>
+      <td>${stageBadge(d.stage || '—')}</td>
+      <td>${d.publications ?? '—'}</td>
+      <td>${d.presentations ?? '—'}</td>
+      <td>${d.grants ?? '—'}</td>
+      <td>${d.mentees ?? '—'}</td>
+      <td>${trendArrow(pubD)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function selectFacultyAndView(id) {
+  selectedFacultyId = id;
+  const f = db.faculty.find(x => x.id === id);
+  const fy = f ? facultyYears(f) : [];
+  selectedIndivYear = fy.length ? fy[fy.length-1] : selectedYear;
+  document.getElementById('facultySelect').value = id;
+  const btn = document.querySelector('.nav-btn:nth-child(2)');
+  showView('individual', btn);
+}
+
+// ── INDIVIDUAL ─────────────────────────────────────────────────────────────────
+function buildFacultySelect() {
+  const sel = document.getElementById('facultySelect');
+  sel.innerHTML = db.faculty.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  if (!selectedFacultyId && db.faculty.length) selectedFacultyId = db.faculty[0].id;
+  sel.value = selectedFacultyId;
+  const editSel = document.getElementById('edit-faculty-sel');
+  if (editSel) editSel.innerHTML = sel.innerHTML;
+}
+
+function renderIndividual() {
+  const f = db.faculty.find(x => x.id === selectedFacultyId);
+  if (!f) return;
+  const fYears = facultyYears(f);
+  const year = fYears.includes(selectedIndivYear) ? selectedIndivYear : (fYears[fYears.length-1] || null);
+  if (!year) return;
+  selectedIndivYear = year;
+  const d = f.data[year] || {};
+  const prevYear = fYears[fYears.indexOf(year) - 1] ?? null;
+  const prevD = prevYear ? (f.data[prevYear] || {}) : {};
+
+  // Hero
+  document.getElementById('facultyHero').innerHTML = `
+    <div class="info">
+      <h2>${f.name}</h2>
+      <p>Division of <span id="hero-div">${document.getElementById('divisionName').textContent}</span></p>
+      <div class="meta">
+        ${METRICS.map(m => `<div class="meta-item"><div class="mv">${d[m] ?? 0}</div><div class="ml">${METRIC_LABELS[m]}</div></div>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div class="stage-badge">${d.stage || 'Unknown Stage'}</div>
+      ${f.yearLeft ? `<div style="font-size:11px;color:rgba(255,255,255,.55);text-align:right">Left institution <span style="color:rgba(255,255,255,.85);font-weight:600">${f.yearLeft}</span></div>` : ''}
+    </div>
+  `;
+
+
+  // Year tabs
+  const tabs = document.getElementById('indivYearTabs');
+  tabs.innerHTML = fYears.map(y => `<button class="year-tab ${y===year?'active':''}" onclick="setIndivYear(${y})">${y}</button>`).join('');
+
+  // Stat cards
+  const cardDefs2 = [
+    { key:'publications', cls:'pub', icon:'📄' },
+    { key:'presentations', cls:'pres', icon:'🎤' },
+    { key:'grants', cls:'grant', icon:'💰' },
+    { key:'mentees', cls:'mentee', icon:'🎓' }
+  ];
+  document.getElementById('indiv-cards').innerHTML = cardDefs2.map(c => {
+    const val = d[c.key] ?? 0;
+    const pval = prevD[c.key];
+    const dd = pval !== undefined ? delta(val, pval) : null;
+    const tclass = dd === null ? 'flat' : parseFloat(dd) >= 0 ? 'up' : 'down';
+    const ttext = dd === null ? 'First year' : `${parseFloat(dd) >= 0 ? '▲' : '▼'} ${Math.abs(dd)}% vs ${prevYear}`;
+    return `<div class="stat-card ${c.cls}" data-icon="${c.icon}">
+      <div class="label">${METRIC_LABELS[c.key]}</div>
+      <div class="value">${val}</div>
+      <div class="trend ${tclass}">${ttext}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('indiv-name-label').textContent = f.name;
+
+  // Trend chart
+  destroyChart('indivTrend');
+  const ctx = document.getElementById('indivTrendChart').getContext('2d');
+  charts['indivTrend'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: fYears,
+      datasets: METRICS.map(m => ({
+        label: METRIC_LABELS[m], data: fYears.map(y => f.data[y]?.[m] || 0),
+        borderColor: METRIC_COLORS[m], backgroundColor: METRIC_COLORS[m] + '18',
+        tension: .4, fill: false, pointRadius: 5, pointHoverRadius: 7, borderWidth: 2.5
+      }))
+    },
+    options: { responsive: true, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  // Year-by-year table
+  document.getElementById('indivTable').innerHTML = fYears.map(y => {
+    const yd = f.data[y] || {};
+    const isC = y === year;
+    return `<tr style="${isC ? 'background:#eff6ff;font-weight:600' : ''}">
+      <td>${y}${isC ? ' <span style="background:#553178;color:#fff;font-size:10px;padding:2px 7px;border-radius:3px">selected</span>' : ''}</td>
+      <td>${stageBadge(yd.stage || '—')}</td>
+      <td>${yd.publications ?? '—'}</td>
+      <td>${yd.presentations ?? '—'}</td>
+      <td>${yd.grants ?? '—'}</td>
+      <td>${yd.mentees ?? '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setIndivYear(y) {
+  selectedIndivYear = y;
+  document.getElementById('yearSelect').value = y;
+  renderIndividual();
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openAddFaculty() {
+  const rows = document.getElementById('af-years-rows');
+  const allKnown = db.faculty.length ? divisionYears() : db.years;
+  const latestYear = allKnown[allKnown.length - 1] ?? new Date().getFullYear();
+  const prevYear = allKnown[allKnown.length - 2] ?? (latestYear - 1);
+  const defaultYears = [...new Set([prevYear, latestYear])].sort((a,b) => a - b);
+  rows.innerHTML = defaultYears.map(y => `
+    <div class="af-row" data-year="${y}" style="margin-bottom:8px;padding:10px 12px;background:var(--bg);border-radius:8px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-weight:700;font-size:12px;color:var(--text-muted)">${y}</span>
+        <button onclick="removeAFRow(${y})" title="Remove this year" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:0 2px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:center;min-width:0">
+        <select class="ctrl af-stage" data-year="${y}" style="font-size:12px;min-width:0">
+          ${STAGES.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
+        <input class="ctrl af-pub" data-year="${y}" type="number" min="0" placeholder="Pubs" style="font-size:12px;min-width:0;width:100%">
+        <input class="ctrl af-pres" data-year="${y}" type="number" min="0" placeholder="Pres" style="font-size:12px;min-width:0;width:100%">
+        <input class="ctrl af-grant" data-year="${y}" type="number" min="0" placeholder="Grants" style="font-size:12px;min-width:0;width:100%">
+        <input class="ctrl af-mentee" data-year="${y}" type="number" min="0" placeholder="Mentees" style="font-size:12px;min-width:0;width:100%">
+      </div>
+    </div>`).join('');
+  openModal('addModal');
+}
+
+function removeAFRow(year) {
+  const row = document.querySelector(`.af-row[data-year="${year}"]`);
+  if (row) row.remove();
+}
+
+function showAFYearInput() {
+  const w = document.getElementById('af-year-input-wrap');
+  w.style.display = 'inline-flex';
+  document.getElementById('af-year-input').focus();
+}
+function hideAFYearInput() {
+  document.getElementById('af-year-input-wrap').style.display = 'none';
+  document.getElementById('af-year-input').value = '';
+}
+function addAFYear() {
+  const y = parseInt(document.getElementById('af-year-input').value);
+  if (!y || y < 2000 || y > 2050) { alert('Enter a valid year (2000–2050).'); return; }
+  if (document.querySelector(`.af-row[data-year="${y}"]`)) { alert(`Year ${y} already added.`); return; }
+  const div = document.createElement('div');
+  div.className = 'af-row';
+  div.dataset.year = y;
+  div.style.cssText = 'margin-bottom:8px;padding:10px 12px;background:var(--bg);border-radius:8px;position:relative';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-weight:700;font-size:12px;color:var(--text-muted)">${y}</span>
+      <button onclick="removeAFRow(${y})" title="Remove this year" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:0 2px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:center;min-width:0">
+      <select class="ctrl af-stage" data-year="${y}" style="font-size:12px">${STAGES.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+      <input class="ctrl af-pub" data-year="${y}" type="number" min="0" placeholder="Pubs" style="font-size:12px">
+      <input class="ctrl af-pres" data-year="${y}" type="number" min="0" placeholder="Pres" style="font-size:12px">
+      <input class="ctrl af-grant" data-year="${y}" type="number" min="0" placeholder="Grants" style="font-size:12px">
+      <input class="ctrl af-mentee" data-year="${y}" type="number" min="0" placeholder="Mentees" style="font-size:12px">
+    </div>`;
+  const rows = document.getElementById('af-years-rows');
+  const existing = [...rows.querySelectorAll('.af-row')];
+  const after = existing.find(r => +r.dataset.year > y);
+  rows.insertBefore(div, after || null);
+  hideAFYearInput();
+}
+
+function showEditYearInput() {
+  const w = document.getElementById('ed-year-input-wrap');
+  w.style.display = 'inline-flex';
+  document.getElementById('ed-year-input').focus();
+}
+function hideEditYearInput() {
+  const w = document.getElementById('ed-year-input-wrap');
+  if (w) w.style.display = 'none';
+  const inp = document.getElementById('ed-year-input');
+  if (inp) inp.value = '';
+}
+function addEditYear() {
+  const y = parseInt(document.getElementById('ed-year-input').value);
+  if (!y || y < 2000 || y > 2050) { alert('Enter a valid year (2000–2050).'); return; }
+  if (document.querySelector(`.ed-row[data-year="${y}"]`)) { alert(`Year ${y} already in table.`); return; }
+  const tbody = document.getElementById('editTableBody');
+  const tr = document.createElement('tr');
+  tr.className = 'ed-row';
+  tr.dataset.year = y;
+  tr.innerHTML = `
+    <td style="font-weight:700">${y}</td>
+    <td><select class="ctrl ed-stage" data-year="${y}" style="font-size:12px;width:100%">${STAGES.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
+    <td><input type="number" class="ctrl ed-pub" data-year="${y}" value="0" min="0" style="width:60px;text-align:center"></td>
+    <td><input type="number" class="ctrl ed-pres" data-year="${y}" value="0" min="0" style="width:60px;text-align:center"></td>
+    <td><input type="number" class="ctrl ed-grant" data-year="${y}" value="0" min="0" style="width:60px;text-align:center"></td>
+    <td><input type="number" class="ctrl ed-mentee" data-year="${y}" value="0" min="0" style="width:60px;text-align:center"></td>
+    <td style="text-align:center"><button onclick="removeEditRow(${y})" title="Delete year" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:15px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'">✕</button></td>`;
+  // Insert in sorted order
+  const existing = [...tbody.querySelectorAll('.ed-row')];
+  const after = existing.find(r => +r.dataset.year > y);
+  tbody.insertBefore(tr, after || null);
+  if (!db.years.includes(y)) { db.years.push(y); db.years.sort((a,b)=>a-b); saveDB(); }
+  hideEditYearInput();
+}
+
+function submitAddFaculty() {
+  const name = document.getElementById('af-name').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  const data = {};
+  document.querySelectorAll('.af-row').forEach(row => {
+    const y = parseInt(row.dataset.year);
+    data[y] = {
+      stage: row.querySelector('.af-stage')?.value || 'Assistant Professor',
+      publications: parseInt(row.querySelector('.af-pub')?.value) || 0,
+      presentations: parseInt(row.querySelector('.af-pres')?.value) || 0,
+      grants: parseInt(row.querySelector('.af-grant')?.value) || 0,
+      mentees: parseInt(row.querySelector('.af-mentee')?.value) || 0,
+    };
+  });
+  const newId = db.faculty.length ? Math.max(...db.faculty.map(f => f.id)) + 1 : 1;
+  db.faculty.push({ id: newId, name, data });
+  if (!selectedFacultyId) selectedFacultyId = newId;
+  buildFacultySelect();
+  saveDB();
+  closeModal('addModal');
+  renderOverview();
+}
+
+function openEditData() {
+  const sel = document.getElementById('edit-faculty-sel');
+  sel.innerHTML = db.faculty.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  sel.value = selectedFacultyId;
+  loadEditRows();
+  openModal('editModal');
+}
+
+function loadEditRows() {
+  const fid = parseInt(document.getElementById('edit-faculty-sel').value);
+  const f = db.faculty.find(x => x.id === fid);
+  if (!f) return;
+  document.getElementById('edit-year-left').value = f.yearLeft || '';
+  const years = facultyYears(f);
+  document.getElementById('editTableBody').innerHTML = years.map(y => {
+    const d = f.data[y] || {};
+    return `<tr class="ed-row" data-year="${y}">
+      <td style="font-weight:700">${y}</td>
+      <td><select class="ctrl ed-stage" data-year="${y}" style="font-size:12px;width:100%">
+        ${STAGES.map(s => `<option value="${s}" ${s===d.stage?'selected':''}>${s}</option>`).join('')}
+      </select></td>
+      <td><input type="number" class="ctrl ed-pub" data-year="${y}" value="${d.publications??0}" min="0" style="width:60px;text-align:center"></td>
+      <td><input type="number" class="ctrl ed-pres" data-year="${y}" value="${d.presentations??0}" min="0" style="width:60px;text-align:center"></td>
+      <td><input type="number" class="ctrl ed-grant" data-year="${y}" value="${d.grants??0}" min="0" style="width:60px;text-align:center"></td>
+      <td><input type="number" class="ctrl ed-mentee" data-year="${y}" value="${d.mentees??0}" min="0" style="width:60px;text-align:center"></td>
+      <td style="text-align:center"><button onclick="removeEditRow(${y})" title="Delete year" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:15px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-light)'">✕</button></td>
+    </tr>`;
+  }).join('');
+  hideEditYearInput();
+}
+
+function removeEditRow(y) {
+  const row = document.querySelector(`.ed-row[data-year="${y}"]`);
+  if (row) row.remove();
+}
+
+function saveEditData() {
+  const fid = parseInt(document.getElementById('edit-faculty-sel').value);
+  const f = db.faculty.find(x => x.id === fid);
+  if (!f) return;
+  // Remove years that were deleted from the table
+  const presentYears = new Set([...document.querySelectorAll('.ed-row')].map(r => +r.dataset.year));
+  Object.keys(f.data).forEach(y => { if (!presentYears.has(+y)) delete f.data[+y]; });
+  // Save present rows
+  presentYears.forEach(y => {
+    f.data[y] = {
+      stage: document.querySelector(`.ed-stage[data-year="${y}"]`)?.value || '',
+      publications: parseInt(document.querySelector(`.ed-pub[data-year="${y}"]`)?.value) || 0,
+      presentations: parseInt(document.querySelector(`.ed-pres[data-year="${y}"]`)?.value) || 0,
+      grants: parseInt(document.querySelector(`.ed-grant[data-year="${y}"]`)?.value) || 0,
+      mentees: parseInt(document.querySelector(`.ed-mentee[data-year="${y}"]`)?.value) || 0,
+    };
+  });
+  const yl = parseInt(document.getElementById('edit-year-left').value);
+  f.yearLeft = yl || null;
+  saveDB();
+  closeModal('editModal');
+  rebuildYearSelect();
+  if (currentView === 'overview') renderOverview();
+  else renderIndividual();
+}
+
+// ── PDF REPORT ────────────────────────────────────────────────────────────────
+function openPDFReport() {
+  const allYears = divisionYears();
+  const latestYear = allYears[allYears.length - 1];
+  const prevYear = allYears[allYears.length - 2];
+  const divName = document.getElementById('divisionName').textContent;
+
+  document.getElementById('rpt-title').textContent = `Division of ${divName} — Faculty Performance Report`;
+  document.getElementById('rpt-subtitle').textContent = `Reporting period: ${allYears[0]}–${latestYear} | Generated: ${new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}`;
+
+  // Totals
+  const totals = {};
+  METRICS.forEach(m => { totals[m] = divisionTotal(latestYear, m); });
+  const prevTotals = {};
+  METRICS.forEach(m => { prevTotals[m] = divisionTotal(prevYear, m); });
+
+  // Summary text
+  const pubChg = delta(totals.publications, prevTotals.publications);
+  const grantChg = delta(totals.grants, prevTotals.grants);
+  document.getElementById('rpt-summary').innerHTML =
+    `The Division of ${divName} comprises <strong>${db.faculty.length} faculty members</strong> spanning ${[...new Set(db.faculty.map(f => f.data[latestYear]?.stage))].filter(Boolean).length} academic appointments. ` +
+    `In ${latestYear}, the division produced a total of <strong>${totals.publications} publications</strong>, ` +
+    `<strong>${totals.presentations} presentations</strong>, maintained <strong>${totals.grants} active grants</strong>, ` +
+    `and supported <strong>${totals.mentees} mentees</strong>. ` +
+    `Publications ${parseFloat(pubChg)>=0?'increased':'decreased'} by ${Math.abs(pubChg)}% compared to ${prevYear}, ` +
+    `and active grants ${parseFloat(grantChg)>=0?'grew':'declined'} by ${Math.abs(grantChg)}% over the same period.`;
+
+  // Metric cards
+  const metricDefs = [
+    { key:'publications', label:'Publications', color:'#00867B' },
+    { key:'presentations', label:'Presentations', color:'#ebab21' },
+    { key:'grants', label:'Active Grants', color:'#00556f' },
+    { key:'mentees', label:'Mentees', color:'#553178' }
+  ];
+  document.getElementById('rpt-metrics').innerHTML = metricDefs.map(m => `
+    <div class="report-metric" style="border-top:3px solid ${m.color}">
+      <div class="rv" style="color:${m.color}">${totals[m.key]}</div>
+      <div class="rl">${m.label}</div>
+    </div>`).join('');
+
+  // Trend table
+  document.getElementById('rpt-trend-body').innerHTML = allYears.map(y => `
+    <tr>
+      <td>${y}</td>
+      <td>${divisionTotal(y,'publications')}</td>
+      <td>${divisionTotal(y,'presentations')}</td>
+      <td>${divisionTotal(y,'grants')}</td>
+      <td>${divisionTotal(y,'mentees')}</td>
+      <td>${db.faculty.length}</td>
+    </tr>`).join('');
+
+  // Faculty table
+  document.getElementById('rpt-faculty-body').innerHTML = db.faculty.map(f => {
+    const d = f.data[latestYear] || {};
+    return `<tr>
+      <td>${f.name}</td>
+      <td>${d.stage||'—'}</td>
+      <td>${d.publications??'—'}</td>
+      <td>${d.presentations??'—'}</td>
+      <td>${d.grants??'—'}</td>
+      <td>${d.mentees??'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Highlights
+  const sorted = [...db.faculty].sort((a,b) => (b.data[latestYear]?.publications||0)-(a.data[latestYear]?.publications||0));
+  const topPub = sorted[0];
+  const topGrant = [...db.faculty].sort((a,b)=>(b.data[latestYear]?.grants||0)-(a.data[latestYear]?.grants||0))[0];
+  const topMentee = [...db.faculty].sort((a,b)=>(b.data[latestYear]?.mentees||0)-(a.data[latestYear]?.mentees||0))[0];
+  const promoted = db.faculty.filter(f => prevYear && f.data[prevYear]?.stage !== f.data[latestYear]?.stage);
+
+  document.getElementById('rpt-highlights').innerHTML = [
+    `<strong>${topPub.name}</strong> led the division with <strong>${topPub.data[latestYear]?.publications} publications</strong> in ${latestYear}.`,
+    `<strong>${topGrant.name}</strong> held the most active grants (${topGrant.data[latestYear]?.grants}) in ${latestYear}.`,
+    `<strong>${topMentee.name}</strong> supported the most mentees (${topMentee.data[latestYear]?.mentees}) in ${latestYear}.`,
+    promoted.length > 0 ? `${promoted.map(f => f.name).join(', ')} advanced in academic appointment in ${latestYear}.` : `No academic appointment transitions occurred in ${latestYear}.`,
+    `Division total publications grew from ${divisionTotal(allYears[0],'publications')} (${allYears[0]}) to ${totals.publications} (${latestYear}), a ${Math.round((totals.publications/divisionTotal(allYears[0],'publications')-1)*100)}% increase over ${allYears.length} years.`
+  ].map(h => `<li>${h}</li>`).join('');
+
+  document.getElementById('pdf-overlay').classList.add('open');
+}
+
+function closePDFReport() {
+  document.getElementById('pdf-overlay').classList.remove('open');
+}
+
+function printReport() {
+  window.print();
+}
+
+// ── CSV IMPORT ────────────────────────────────────────────────────────────────
+let importParsed = { headers: [], rows: [] };
+
+const FIELD_DEFS = [
+  { key: 'name',          label: 'Faculty Name',         keywords: ['name','faculty'] },
+  { key: 'year',          label: 'Year',                 keywords: ['year'] },
+  { key: 'stage',         label: 'Academic Appointment', keywords: ['appointment','stage','rank','title','position'] },
+  { key: 'publications',  label: 'Publications',         keywords: ['pub'] },
+  { key: 'presentations', label: 'Presentations / Talks',keywords: ['pres','talk','lecture','present'] },
+  { key: 'grants',        label: 'Grants',               keywords: ['grant','fund'] },
+  { key: 'mentees',       label: 'Mentees',              keywords: ['ment','trainee','student','fellow'] },
+];
+
+function parseCSV(text) {
+  // Detect delimiter (tab vs comma)
+  const delim = (text.split('\t').length > text.split(',').length) ? '\t' : ',';
+  const lines = text.trim().split(/\r?\n/);
+  const headers = splitLine(lines[0], delim);
+  const rows = lines.slice(1).filter(l => l.trim()).map(l => {
+    const vals = splitLine(l, delim);
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    return obj;
+  });
+  return { headers, rows };
+}
+
+function splitLine(line, delim) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === delim && !inQ) { result.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function autoMap(headers) {
+  const mapping = {};
+  FIELD_DEFS.forEach(f => {
+    const match = headers.find(h =>
+      f.keywords.some(kw => h.toLowerCase().includes(kw))
+    );
+    mapping[f.key] = match || '';
+  });
+  return mapping;
+}
+
+function openImport() {
+  document.getElementById('import-step-1').style.display = '';
+  document.getElementById('import-step-2').style.display = 'none';
+  document.getElementById('csvFileInput').value = '';
+  openModal('importModal');
+}
+
+function handleCSVUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    importParsed = parseCSV(e.target.result);
+    if (!importParsed.headers.length) { alert('Could not read the file. Make sure it is a CSV.'); return; }
+    showImportStep2();
+  };
+  reader.readAsText(file);
+}
+
+function showImportStep2() {
+  const { headers, rows } = importParsed;
+  const mapping = autoMap(headers);
+
+  // Build mapping dropdowns
+  const grid = document.getElementById('importMappingGrid');
+  grid.innerHTML = FIELD_DEFS.map(f => `
+    <div class="form-group">
+      <label>${f.label}${f.key==='name'||f.key==='year'?' <span style="color:var(--red)">*</span>':''}</label>
+      <select class="ctrl" id="map_${f.key}" style="width:100%" onchange="updateImportPreview()">
+        <option value="">— skip —</option>
+        ${headers.map(h => `<option value="${h}" ${h===mapping[f.key]?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  document.getElementById('import-step-1').style.display = 'none';
+  document.getElementById('import-step-2').style.display = '';
+  updateImportPreview();
+}
+
+function getImportMapping() {
+  const m = {};
+  FIELD_DEFS.forEach(f => { m[f.key] = document.getElementById('map_' + f.key)?.value || ''; });
+  return m;
+}
+
+function updateImportPreview() {
+  const m = getImportMapping();
+  const { rows } = importParsed;
+  const preview = rows.slice(0, 6);
+  const fields = FIELD_DEFS.filter(f => m[f.key]);
+
+  document.getElementById('importPreviewCount').textContent = `(${rows.length} rows)`;
+  const table = document.getElementById('importPreviewTable');
+  table.innerHTML = `
+    <thead><tr>${fields.map(f => `<th>${f.label}</th>`).join('')}</tr></thead>
+    <tbody>${preview.map(row => `<tr>${fields.map(f => `<td>${row[m[f.key]] || '—'}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+function importBack() {
+  document.getElementById('import-step-1').style.display = '';
+  document.getElementById('import-step-2').style.display = 'none';
+}
+
+function confirmImport() {
+  const m = getImportMapping();
+  if (!m.name) { alert('Please map the Faculty Name column.'); return; }
+  if (!m.year) { alert('Please map the Year column.'); return; }
+
+  const { rows } = importParsed;
+  let added = 0, updated = 0;
+
+  rows.forEach(row => {
+    const name = (row[m.name] || '').trim();
+    const year = parseInt(row[m.year]);
+    if (!name || !year) return;
+
+    let faculty = db.faculty.find(f => f.name.toLowerCase() === name.toLowerCase());
+    if (!faculty) {
+      const newId = db.faculty.length ? Math.max(...db.faculty.map(f => f.id)) + 1 : 1;
+      faculty = { id: newId, name, data: {} };
+      db.faculty.push(faculty);
+      added++;
+    } else { updated++; }
+
+    if (!db.years.includes(year)) { db.years.push(year); db.years.sort((a,b)=>a-b); }
+    faculty.data[year] = {
+      stage:         m.stage         ? (row[m.stage]         || '') : (faculty.data[year]?.stage || ''),
+      publications:  m.publications  ? (parseInt(row[m.publications])  || 0) : (faculty.data[year]?.publications || 0),
+      presentations: m.presentations ? (parseInt(row[m.presentations]) || 0) : (faculty.data[year]?.presentations || 0),
+      grants:        m.grants        ? (parseInt(row[m.grants])        || 0) : (faculty.data[year]?.grants || 0),
+      mentees:       m.mentees       ? (parseInt(row[m.mentees])       || 0) : (faculty.data[year]?.mentees || 0),
+    };
+  });
+
+  if (!selectedFacultyId && db.faculty.length) selectedFacultyId = db.faculty[0].id;
+  saveDB();
+  buildFacultySelect();
+  rebuildYearSelect();
+  closeModal('importModal');
+  renderOverview();
+  alert(`Import complete!\n\n${added} new faculty added\n${updated} existing faculty updated`);
+}
+
+function downloadCSVTemplate() {
+  const csv = [
+    'Name,Year,Academic Appointment,Publications,Presentations,Grants,Mentees',
+    'Dr. Jane Smith,2024,Associate Professor,5,3,2,4',
+    'Dr. Jane Smith,2023,Assistant Professor,3,2,1,2',
+    'Dr. John Doe,2024,Professor,10,6,4,8',
+  ].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'faculty_dashboard_template.csv';
+  a.click();
+}
+
+// ── SHARE / DOWNLOAD ──────────────────────────────────────────────────────────
+function downloadWithData() {
+  // Capture current DOM (picks up edited division/chief names automatically)
+  let html = document.documentElement.outerHTML;
+
+  // Inject current runtime db data between the markers
+  const dbJson = JSON.stringify(db, null, 2);
+  html = html.replace(
+    /\/\/ __DB_START__[\s\S]*?\/\/ __DB_END__/,
+    `// __DB_START__\nlet db = ${dbJson};\n// __DB_END__`
+  );
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const divName = (document.getElementById('divisionName').textContent || 'Division').trim();
+  a.download = `Faculty Dashboard – ${divName}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+// ── PERSISTENCE ───────────────────────────────────────────────────────────────
+function saveDB() {
+  try {
+    localStorage.setItem('facultyDashboard_db', JSON.stringify(db));
+    localStorage.setItem('facultyDashboard_divisionName', document.getElementById('divisionName').textContent);
+    localStorage.setItem('facultyDashboard_chiefName', document.getElementById('chiefName').textContent);
+  } catch(e) {}
+}
+
+function loadDB() {
+  try {
+    const saved = localStorage.getItem('facultyDashboard_db');
+    if (saved) db = JSON.parse(saved);
+    const divName = localStorage.getItem('facultyDashboard_divisionName');
+    if (divName) document.getElementById('divisionName').textContent = divName;
+    const chiefName = localStorage.getItem('facultyDashboard_chiefName');
+    if (chiefName) document.getElementById('chiefName').textContent = chiefName;
+  } catch(e) {}
+}
+
+function init() {
+  loadDB();
+  buildFacultySelect();
+  rebuildYearSelect();
+  renderOverview();
+
+  document.getElementById('divisionName').addEventListener('input', () => {
+    document.getElementById('lastSaved').textContent = 'Unsaved changes';
+  });
+  document.getElementById('divisionName').addEventListener('blur', () => {
+    saveDB();
+    document.getElementById('lastSaved').textContent = 'Saved';
+    setTimeout(() => document.getElementById('lastSaved').textContent = 'All changes auto-saved', 2000);
+  });
+  document.getElementById('chiefName').addEventListener('blur', () => { saveDB(); });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
