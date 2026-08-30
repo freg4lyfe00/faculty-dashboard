@@ -246,7 +246,28 @@
   .pdf-close-btn { position: sticky; top: 8px; float: right; margin-bottom: -40px; }
   #print-btn-bar { display: flex; gap: 10px; justify-content: center; padding: 16px 0 0; border-top: 1px solid var(--border); margin-top: 24px; }
 
-  @media print { body { background: #fff; } #sidebar, #topbar, .pdf-close-btn, #print-btn-bar { display: none !important; } #main { margin: 0; } #pdf-report { box-shadow: none; border-radius: 0; max-height: none; overflow: visible; } #pdf-overlay { position: static; background: none; display: block !important; } }
+  @media print {
+    @page { size: letter portrait; margin: 0.4in; }
+    body { background: #fff; display: block; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    #sidebar, #topbar, .pdf-close-btn, #print-btn-bar { display: none !important; }
+    #main { display: none !important; }
+    #pdf-overlay { position: static; background: none; display: block !important; }
+    /* All dimensions scaled 0.92× (800px preview → 739px printable width at 0.4in margins) */
+    #pdf-report { box-shadow: none; border-radius: 0; max-height: none; overflow: visible; width: 100%; padding: 44px; }
+    #pdf-report .report-header { margin: -44px -44px 22px; padding: 28px 44px 22px; }
+    #pdf-report .report-header h1 { font-size: 20px; }
+    #pdf-report .report-header p { font-size: 12px; }
+    #pdf-report .report-section { margin-bottom: 18px; }
+    #pdf-report .report-section h2 { margin-bottom: 10px; }
+    #pdf-report .report-grid { gap: 10px; margin-bottom: 12px; }
+    #pdf-report .report-metric { padding: 12px 10px; }
+    #pdf-report .report-metric .rv { font-size: 24px; }
+    #pdf-report table { font-size: 11px; }
+    #pdf-report th { padding: 7px 11px; }
+    #pdf-report td { padding: 6px 11px; }
+    #rpt-highlights { font-size: 11px !important; line-height: 1.55 !important; padding-left: 18px !important; }
+  }
 </style>
 </head>
 <body>
