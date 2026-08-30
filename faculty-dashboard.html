@@ -280,10 +280,6 @@
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
       Add Faculty
     </button>
-    <button class="nav-btn" onclick="openEditData()">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Edit Data
-    </button>
     <button class="nav-btn" onclick="openPDFReport()">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download PDF Report
@@ -304,10 +300,8 @@
   <div id="topbar">
     <h2 id="topbar-title">Division Overview</h2>
     <div class="topbar-controls">
-      <select class="ctrl" id="yearSelect" onchange="onYearChange()"></select>
-      <select class="ctrl" id="facultySelect" onchange="onFacultyChange()" style="display:none">
-      </select>
-      <button class="btn btn-navy" onclick="openPDFReport()">⬇ Export Report</button>
+      <select class="ctrl" id="yearSelect" onchange="onYearChange()" style="font-size:15px;padding:8px 16px;font-weight:600"></select>
+      <select class="ctrl" id="facultySelect" onchange="onFacultyChange()" style="display:none;font-size:15px;padding:8px 16px;font-weight:600"></select>
     </div>
   </div>
 
@@ -333,14 +327,6 @@
       </div>
 
       <div class="chart-grid">
-        <div class="chart-card" style="grid-column:1/2">
-          <h3>Faculty Reporting by Year <span>With data entered</span></h3>
-          <canvas id="facultyCountChart"></canvas>
-        </div>
-        <div class="chart-card" style="grid-column:2/-1">
-          <h3>Division Trends — All Metrics Over Time <span>Total across all faculty</span></h3>
-          <canvas id="divisionTrendChart"></canvas>
-        </div>
         <div class="chart-card wide">
           <h3>Faculty Performance Breakdown <span id="stacked-year-label"></span></h3>
           <canvas id="stackedBarChart" style="max-height:300px"></canvas>
@@ -366,6 +352,29 @@
           </thead>
           <tbody id="rosterBody"></tbody>
         </table>
+      </div>
+
+      <!-- Collapsible trend charts -->
+      <div class="table-card" style="overflow:visible">
+        <div class="table-header" onclick="toggleTrendCharts()" style="cursor:pointer;user-select:none">
+          <h3>Division Trends</h3>
+          <span id="trend-toggle-label" style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+            Show
+            <svg id="trend-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </div>
+        <div id="trend-charts-body" style="display:none;padding:20px 22px">
+          <div class="chart-grid" style="margin-bottom:0">
+            <div class="chart-card" style="grid-column:1/2;box-shadow:none;border:1px solid var(--border)">
+              <h3>Faculty Reporting by Year <span>With data entered</span></h3>
+              <canvas id="facultyCountChart"></canvas>
+            </div>
+            <div class="chart-card" style="grid-column:2/-1;box-shadow:none;border:1px solid var(--border)">
+              <h3>Division Trends — All Metrics Over Time <span>Total across all faculty</span></h3>
+              <canvas id="divisionTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -525,10 +534,6 @@
     <div class="report-header">
       <h1 id="rpt-title">Division of Pulmonary Medicine — Faculty Performance Report</h1>
       <p id="rpt-subtitle"></p>
-    </div>
-    <div class="report-section">
-      <h2>Executive Summary</h2>
-      <p id="rpt-summary" style="font-size:13px;line-height:1.7;color:var(--text-muted)"></p>
     </div>
     <div class="report-section">
       <h2>Division Totals — Most Recent Year</h2>
@@ -878,7 +883,11 @@ function renderIndividual() {
   // Hero
   document.getElementById('facultyHero').innerHTML = `
     <div class="info">
-      <h2>${f.name}</h2>
+      <h2 style="display:flex;align-items:center;gap:10px">${f.name}
+        <button onclick="openEditDataForFaculty(${f.id})" title="Edit data" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:4px 7px;cursor:pointer;display:inline-flex;align-items:center;color:#fff;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </h2>
       <p>Division of <span id="hero-div">${document.getElementById('divisionName').textContent}</span></p>
       <div class="meta">
         ${METRICS.map(m => `<div class="meta-item"><div class="mv">${d[m] ?? 0}</div><div class="ml">${METRIC_LABELS[m]}</div></div>`).join('')}
@@ -955,6 +964,24 @@ function setIndivYear(y) {
   selectedIndivYear = y;
   document.getElementById('yearSelect').value = y;
   renderIndividual();
+}
+
+let trendChartsOpen = false;
+function toggleTrendCharts() {
+  trendChartsOpen = !trendChartsOpen;
+  const body = document.getElementById('trend-charts-body');
+  const chevron = document.getElementById('trend-chevron');
+  const label = document.getElementById('trend-toggle-label');
+  body.style.display = trendChartsOpen ? '' : 'none';
+  chevron.style.transform = trendChartsOpen ? 'rotate(180deg)' : '';
+  label.childNodes[0].textContent = trendChartsOpen ? 'Hide' : 'Show';
+  // Charts need a resize tick after becoming visible to render at correct size
+  if (trendChartsOpen) {
+    setTimeout(() => {
+      if (charts['facultyCount']) charts['facultyCount'].resize();
+      if (charts['divisionTrend']) charts['divisionTrend'].resize();
+    }, 50);
+  }
 }
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
@@ -1085,6 +1112,11 @@ function submitAddFaculty() {
   renderOverview();
 }
 
+function openEditDataForFaculty(id) {
+  selectedFacultyId = id;
+  openEditData();
+}
+
 function openEditData() {
   const sel = document.getElementById('edit-faculty-sel');
   sel.innerHTML = db.faculty.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
@@ -1170,7 +1202,7 @@ function openPDFReport() {
   const prevYear = allYears[allYears.length - 2];
   const divName = document.getElementById('divisionName').textContent;
 
-  document.getElementById('rpt-title').textContent = `Division of ${divName} — Faculty Performance Report`;
+  document.getElementById('rpt-title').textContent = `Division Performance Report — ${divName}`;
   document.getElementById('rpt-subtitle').textContent = `Reporting period: ${allYears[0]}–${latestYear} | Generated: ${new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}`;
 
   // Totals
@@ -1179,16 +1211,6 @@ function openPDFReport() {
   const prevTotals = {};
   METRICS.forEach(m => { prevTotals[m] = divisionTotal(prevYear, m); });
 
-  // Summary text
-  const pubChg = delta(totals.publications, prevTotals.publications);
-  const grantChg = delta(totals.grants, prevTotals.grants);
-  document.getElementById('rpt-summary').innerHTML =
-    `The Division of ${divName} comprises <strong>${db.faculty.length} faculty members</strong> spanning ${[...new Set(db.faculty.map(f => f.data[latestYear]?.stage))].filter(Boolean).length} academic appointments. ` +
-    `In ${latestYear}, the division produced a total of <strong>${totals.publications} publications</strong>, ` +
-    `<strong>${totals.presentations} presentations</strong>, maintained <strong>${totals.grants} active grants</strong>, ` +
-    `and supported <strong>${totals.mentees} mentees</strong>. ` +
-    `Publications ${parseFloat(pubChg)>=0?'increased':'decreased'} by ${Math.abs(pubChg)}% compared to ${prevYear}, ` +
-    `and active grants ${parseFloat(grantChg)>=0?'grew':'declined'} by ${Math.abs(grantChg)}% over the same period.`;
 
   // Metric cards
   const metricDefs = [
