@@ -341,13 +341,9 @@
           <h3>Division Trends — All Metrics Over Time <span>Total across all faculty</span></h3>
           <canvas id="divisionTrendChart"></canvas>
         </div>
-        <div class="chart-card">
-          <h3>Publications by Faculty <span id="pub-year-label"></span></h3>
-          <canvas id="pubBarChart"></canvas>
-        </div>
-        <div class="chart-card">
-          <h3>Active Grants by Faculty <span id="grant-year-label"></span></h3>
-          <canvas id="grantBarChart"></canvas>
+        <div class="chart-card wide">
+          <h3>Faculty Performance Breakdown <span id="stacked-year-label"></span></h3>
+          <canvas id="stackedBarChart" style="max-height:300px"></canvas>
         </div>
       </div>
 
@@ -477,7 +473,7 @@
   <div class="modal" style="width:680px">
     <button class="modal-close" onclick="closeModal('editModal')">✕</button>
     <h2>Edit Faculty Data</h2>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:end;margin-bottom:14px">
       <div class="form-group" style="margin-bottom:0">
         <label>Select Faculty</label>
         <select id="edit-faculty-sel" onchange="loadEditRows()" class="ctrl" style="width:100%"></select>
@@ -486,6 +482,13 @@
         <label>Year Left Institution</label>
         <input type="number" id="edit-year-left" class="ctrl" min="1900" max="2100" placeholder="— still active —" style="width:170px"
           onkeydown="if(event.key==='Enter')this.blur()">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label style="visibility:hidden">Delete</label>
+        <button class="btn" onclick="deleteFacultyFromEdit()" style="background:#fff1f2;color:#dc2626;border:1px solid #fecaca;padding:7px 14px;white-space:nowrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Delete Faculty
+        </button>
       </div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px" id="editTable">
@@ -794,38 +797,33 @@ function renderOverview() {
     }
   });
 
-  // Bar charts
-  const yearLabel = `(${year})`;
-  document.getElementById('pub-year-label').textContent = yearLabel;
-  document.getElementById('grant-year-label').textContent = yearLabel;
+  // Stacked bar chart
+  document.getElementById('stacked-year-label').textContent = `(${year})`;
   const barFaculty = facultyForYear(year);
   const names = barFaculty.map(f => f.name.trim().split(' ').pop());
 
-  destroyChart('pubBar');
-  const ctx2 = document.getElementById('pubBarChart').getContext('2d');
-  charts['pubBar'] = new Chart(ctx2, {
+  destroyChart('stackedBar');
+  charts['stackedBar'] = new Chart(document.getElementById('stackedBarChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels: names,
-      datasets: [{ label: 'Publications', data: barFaculty.map(f => f.data[year]?.publications || 0),
-        backgroundColor: '#00867B', borderRadius: 6, borderSkipped: false }]
+      datasets: [
+        { label: 'Publications',  data: barFaculty.map(f => f.data[year]?.publications  || 0), backgroundColor: '#00867B', stack: 'faculty' },
+        { label: 'Presentations', data: barFaculty.map(f => f.data[year]?.presentations || 0), backgroundColor: '#ebab21', stack: 'faculty' },
+        { label: 'Active Grants', data: barFaculty.map(f => f.data[year]?.grants        || 0), backgroundColor: '#00556f', stack: 'faculty' },
+        { label: 'Mentees',       data: barFaculty.map(f => f.data[year]?.mentees       || 0), backgroundColor: '#553178', stack: 'faculty' },
+      ]
     },
-    options: { responsive: true, plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } }
-    }
-  });
-
-  destroyChart('grantBar');
-  const ctx3 = document.getElementById('grantBarChart').getContext('2d');
-  charts['grantBar'] = new Chart(ctx3, {
-    type: 'bar',
-    data: {
-      labels: names,
-      datasets: [{ label: 'Active Grants', data: barFaculty.map(f => f.data[year]?.grants || 0),
-        backgroundColor: '#00556f', borderRadius: 6, borderSkipped: false }]
-    },
-    options: { responsive: true, plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 12 } } },
+        y: { stacked: true, beginAtZero: true, grid: { color: '#f0f0f0' } }
+      }
     }
   });
 
@@ -1121,6 +1119,22 @@ function loadEditRows() {
 function removeEditRow(y) {
   const row = document.querySelector(`.ed-row[data-year="${y}"]`);
   if (row) row.remove();
+}
+
+function deleteFacultyFromEdit() {
+  const fid = parseInt(document.getElementById('edit-faculty-sel').value, 10);
+  if (isNaN(fid)) { alert('No faculty selected.'); return; }
+  // Use loose string comparison to avoid type mismatch from localStorage
+  const f = db.faculty.find(x => String(x.id) === String(fid));
+  if (!f) { alert('Faculty not found.'); return; }
+  if (!confirm(`Permanently delete ${f.name}?\n\nAll their data will be removed. This cannot be undone.`)) return;
+  db.faculty = db.faculty.filter(x => String(x.id) !== String(fid));
+  if (String(selectedFacultyId) === String(fid)) selectedFacultyId = db.faculty[0]?.id ?? null;
+  saveDB();
+  buildFacultySelect();
+  rebuildYearSelect();
+  closeModal('editModal');
+  renderOverview();
 }
 
 function saveEditData() {
