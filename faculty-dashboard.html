@@ -747,16 +747,20 @@ function renderOverview() {
     { key:'grants', label:'Active Grants', cls:'grant', icon:'💰' },
     { key:'mentees', label:'Mentees', cls:'mentee', icon:'🎓' }
   ];
+  const prevN = prevYear ? facultyForYear(prevYear).length : 0;
   const cardsEl = document.getElementById('overview-cards');
   cardsEl.innerHTML = cardDefs.map(c => {
     const val = divisionTotal(year, c.key);
+    const avg = total > 0 ? val / total : 0;
+    const avgStr = (avg === Math.floor(avg)) ? avg.toFixed(0) : avg.toFixed(1);
     const pval = prevYear ? divisionTotal(prevYear, c.key) : null;
-    const d = pval !== null ? delta(val, pval) : null;
+    const prevAvg = (pval !== null && prevN > 0) ? pval / prevN : null;
+    const d = prevAvg !== null ? delta(avg, prevAvg) : null;
     const tclass = d === null ? 'flat' : parseFloat(d) >= 0 ? 'up' : 'down';
-    const ttext = d === null ? 'No prior year' : `${parseFloat(d) >= 0 ? '▲' : '▼'} ${Math.abs(d)}% vs ${prevYear}`;
+    const ttext = d === null ? 'No prior year' : `${parseFloat(d) >= 0 ? '▲' : '▼'} ${Math.abs(d)}% per person vs ${prevYear}`;
     return `<div class="stat-card ${c.cls}" data-icon="${c.icon}">
       <div class="label">${c.label}</div>
-      <div class="value">${val}</div>
+      <div class="value">${val} <span style="font-size:17px;font-weight:400;color:var(--text-light)">(${avgStr}/person)</span></div>
       <div class="trend ${tclass}">${ttext}</div>
     </div>`;
   }).join('');
