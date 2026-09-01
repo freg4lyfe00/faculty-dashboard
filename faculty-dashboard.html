@@ -158,6 +158,10 @@
   .table-card .table-header h3 { font-size: 13px; font-weight: 600; }
   table { width: 100%; border-collapse: collapse; }
   th { padding: 8px 16px; text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); background: var(--card); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: var(--bg-secondary); color: var(--text); }
+  th.sort-asc::after { content: ' ▲'; color: var(--blue); font-size: 9px; }
+  th.sort-desc::after { content: ' ▼'; color: var(--blue); font-size: 9px; }
   td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: var(--bg); }
@@ -362,13 +366,13 @@
         <table id="rosterTable">
           <thead>
             <tr>
-              <th>Faculty</th>
-              <th>Academic Appointment</th>
-              <th>Publications</th>
-              <th>Presentations</th>
-              <th>Active Grants</th>
-              <th>Mentees</th>
-              <th>YoY Pubs</th>
+              <th class="sortable" data-col="name" onclick="sortRoster('name')">Faculty</th>
+              <th class="sortable" data-col="stage" onclick="sortRoster('stage')">Academic Appointment</th>
+              <th class="sortable" data-col="publications" onclick="sortRoster('publications')">Publications</th>
+              <th class="sortable" data-col="presentations" onclick="sortRoster('presentations')">Presentations</th>
+              <th class="sortable" data-col="grants" onclick="sortRoster('grants')">Active Grants</th>
+              <th class="sortable" data-col="mentees" onclick="sortRoster('mentees')">Mentees</th>
+              <th class="sortable" data-col="yoy" onclick="sortRoster('yoy')">YoY Pubs</th>
             </tr>
           </thead>
           <tbody id="rosterBody"></tbody>
@@ -600,6 +604,8 @@ let selectedYear = 2024;
 let selectedFacultyId = null;
 let selectedIndivYear = 2024;
 let charts = {};
+let rosterSortCol = null;
+let rosterSortDir = 'asc';
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 const METRICS = ['publications','presentations','grants','mentees'];
@@ -858,7 +864,33 @@ function renderOverview() {
   });
 
   // Roster table
-  document.getElementById('rosterBody').innerHTML = db.faculty.map(f => {
+  let sortedFaculty = [...db.faculty];
+  if (rosterSortCol) {
+    sortedFaculty.sort((a, b) => {
+      const aYr = a.data[year] || {};
+      const bYr = b.data[year] || {};
+      const aPrev = prevYear ? (a.data[prevYear] || {}) : {};
+      const bPrev = prevYear ? (b.data[prevYear] || {}) : {};
+      let va, vb;
+      if (rosterSortCol === 'name') {
+        va = a.name.toLowerCase(); vb = b.name.toLowerCase();
+      } else if (rosterSortCol === 'stage') {
+        va = aYr.stage || ''; vb = bYr.stage || '';
+      } else if (rosterSortCol === 'yoy') {
+        const aD = prevYear ? delta(aYr.publications, aPrev.publications) : null;
+        const bD = prevYear ? delta(bYr.publications, bPrev.publications) : null;
+        va = aD !== null ? parseFloat(aD) : -Infinity;
+        vb = bD !== null ? parseFloat(bD) : -Infinity;
+      } else {
+        va = aYr[rosterSortCol] ?? -1;
+        vb = bYr[rosterSortCol] ?? -1;
+      }
+      if (va < vb) return rosterSortDir === 'asc' ? -1 : 1;
+      if (va > vb) return rosterSortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  document.getElementById('rosterBody').innerHTML = sortedFaculty.map(f => {
     const d = f.data[year] || {};
     const prevD = prevYear ? (f.data[prevYear] || {}) : {};
     const pubD = prevYear ? delta(d.publications, prevD.publications) : null;
@@ -872,6 +904,12 @@ function renderOverview() {
       <td>${trendArrow(pubD)}</td>
     </tr>`;
   }).join('');
+  document.querySelectorAll('#rosterTable th').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === rosterSortCol) {
+      th.classList.add(rosterSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
 }
 
 function selectFacultyAndView(id) {
@@ -989,6 +1027,16 @@ function setIndivYear(y) {
   selectedIndivYear = y;
   document.getElementById('yearSelect').value = y;
   renderIndividual();
+}
+
+function sortRoster(col) {
+  if (rosterSortCol === col) {
+    rosterSortDir = rosterSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    rosterSortCol = col;
+    rosterSortDir = 'asc';
+  }
+  renderOverview();
 }
 
 let trendChartsOpen = false;
