@@ -250,6 +250,14 @@
   .pdf-close-btn { position: sticky; top: 8px; float: right; margin-bottom: -40px; }
   #print-btn-bar { display: flex; gap: 10px; justify-content: center; padding: 16px 0 0; border-top: 1px solid var(--border); margin-top: 24px; }
 
+  .rpt-edit-hint {
+    font-size: 10px; font-weight: 400; color: var(--blue); text-transform: none;
+    letter-spacing: 0; margin-left: 8px; opacity: 0; transition: opacity .15s;
+  }
+  #rpt-highlights-section:hover .rpt-edit-hint { opacity: 1; }
+  #rpt-highlights[contenteditable]:hover { background: rgba(0,134,123,.05); border-radius: 4px; cursor: text; }
+  #rpt-highlights[contenteditable]:focus { background: rgba(0,134,123,.08); border-radius: 4px; box-shadow: inset 0 0 0 1px var(--blue); outline: none; }
+
   @media print {
     @page { size: letter portrait; margin: 0.4in; }
     body { background: #fff; display: block; }
@@ -271,6 +279,7 @@
     #pdf-report th { padding: 7px 11px; }
     #pdf-report td { padding: 6px 11px; }
     #rpt-highlights { font-size: 11px !important; line-height: 1.55 !important; padding-left: 18px !important; }
+    .rpt-edit-hint { display: none !important; }
   }
 </style>
 </head>
@@ -372,7 +381,6 @@
               <th class="sortable" data-col="presentations" onclick="sortRoster('presentations')">Presentations</th>
               <th class="sortable" data-col="grants" onclick="sortRoster('grants')">Active Grants</th>
               <th class="sortable" data-col="mentees" onclick="sortRoster('mentees')">Mentees</th>
-              <th class="sortable" data-col="yoy" onclick="sortRoster('yoy')">YoY Pubs</th>
             </tr>
           </thead>
           <tbody id="rosterBody"></tbody>
@@ -579,8 +587,8 @@
       </table>
     </div>
     <div class="report-section" id="rpt-highlights-section">
-      <h2>Notable Highlights</h2>
-      <ul id="rpt-highlights" style="font-size:13px;line-height:1.9;color:var(--text);padding-left:20px"></ul>
+      <h2>Notable Highlights <span class="rpt-edit-hint">✏ click to edit</span></h2>
+      <ul id="rpt-highlights" contenteditable="true" style="font-size:13px;line-height:1.9;color:var(--text);padding-left:20px"></ul>
     </div>
     <div id="print-btn-bar">
       <button class="btn btn-outline" onclick="closePDFReport()">Close</button>
@@ -869,18 +877,11 @@ function renderOverview() {
     sortedFaculty.sort((a, b) => {
       const aYr = a.data[year] || {};
       const bYr = b.data[year] || {};
-      const aPrev = prevYear ? (a.data[prevYear] || {}) : {};
-      const bPrev = prevYear ? (b.data[prevYear] || {}) : {};
       let va, vb;
       if (rosterSortCol === 'name') {
         va = a.name.toLowerCase(); vb = b.name.toLowerCase();
       } else if (rosterSortCol === 'stage') {
         va = aYr.stage || ''; vb = bYr.stage || '';
-      } else if (rosterSortCol === 'yoy') {
-        const aD = prevYear ? delta(aYr.publications, aPrev.publications) : null;
-        const bD = prevYear ? delta(bYr.publications, bPrev.publications) : null;
-        va = aD !== null ? parseFloat(aD) : -Infinity;
-        vb = bD !== null ? parseFloat(bD) : -Infinity;
       } else {
         va = aYr[rosterSortCol] ?? -1;
         vb = bYr[rosterSortCol] ?? -1;
@@ -892,8 +893,6 @@ function renderOverview() {
   }
   document.getElementById('rosterBody').innerHTML = sortedFaculty.map(f => {
     const d = f.data[year] || {};
-    const prevD = prevYear ? (f.data[prevYear] || {}) : {};
-    const pubD = prevYear ? delta(d.publications, prevD.publications) : null;
     return `<tr class="faculty-row" onclick="selectFacultyAndView(${f.id})">
       <td><strong>${f.name}</strong></td>
       <td>${stageBadge(d.stage || '—')}</td>
@@ -901,7 +900,6 @@ function renderOverview() {
       <td>${d.presentations ?? '—'}</td>
       <td>${d.grants ?? '—'}</td>
       <td>${d.mentees ?? '—'}</td>
-      <td>${trendArrow(pubD)}</td>
     </tr>`;
   }).join('');
   document.querySelectorAll('#rosterTable th').forEach(th => {
@@ -1516,26 +1514,53 @@ function downloadCSVTemplate() {
 }
 
 // ── SHARE / DOWNLOAD ──────────────────────────────────────────────────────────
-function downloadWithData() {
-  // Capture current DOM (picks up edited division/chief names automatically)
-  let html = document.documentElement.outerHTML;
+async function downloadWithData() {
+  const divName = (document.getElementById('divisionName').textContent || 'Division').trim();
+  const chiefName = (document.getElementById('chiefName').textContent || '').trim();
 
-  // Inject current runtime db data between the markers
-  const dbJson = JSON.stringify(db, null, 2);
+  // Prepend DOCTYPE so browsers always open this as HTML, not a text/Word document
+  let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+  // Bake current runtime db into the script block; escape </ so the JSON
+  // can't accidentally close the <script> tag (e.g. if a name contains "</")
+  const dbJson = JSON.stringify(db, null, 2).replace(/<\//g, '<\\/');
   html = html.replace(
     /\/\/ __DB_START__[\s\S]*?\/\/ __DB_END__/,
     `// __DB_START__\nlet db = ${dbJson};\n// __DB_END__`
   );
 
+  // Also bake the division/chief names so they survive in a browser
+  // where localStorage is empty (different machine or fresh profile)
+  html = html.replace(/(<div[^>]*id="divisionName"[^>]*>)[^<]*/, `$1${divName}`);
+  html = html.replace(/(<div[^>]*id="chiefName"[^>]*>)[^<]*/, `$1${chiefName}`);
+
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  const divName = (document.getElementById('divisionName').textContent || 'Division').trim();
-  a.download = `Faculty Dashboard – ${divName}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+  const suggestedName = `Faculty Dashboard – ${divName}.html`;
+
+  // Use the native OS Save As dialog when available (Chrome/Edge/Arc)
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: 'HTML File', accept: { 'text/html': ['.html'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } catch (e) {
+      if (e.name !== 'AbortError') throw e;
+      // User cancelled the dialog — do nothing
+    }
+  } else {
+    // Fallback for Firefox/Safari: trigger a regular download
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = suggestedName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
