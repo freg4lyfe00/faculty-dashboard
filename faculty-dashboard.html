@@ -252,6 +252,7 @@
   #pdf-report .report-metric { background: #f5f5f7; border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; text-align: center; border-top: 3px solid transparent; }
   #pdf-report .report-metric .rv { font-size: 28px; font-weight: 500; color: #1a1a1a; }
   #pdf-report .report-metric .rl { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: #767676; margin-top: 2px; }
+  #pdf-report .report-metric .ra { font-size: 11px; color: #999; margin-top: 4px; }
   #pdf-report table { width: 100%; border-collapse: collapse; font-size: 12px; }
   #pdf-report th { background: #553178; color: #fff; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 500; }
   #pdf-report td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
@@ -261,7 +262,7 @@
 
   .rpt-edit-hint {
     font-size: 10px; font-weight: 400; color: var(--blue); text-transform: none;
-    letter-spacing: 0; margin-left: 8px; opacity: 0; transition: opacity .15s;
+    letter-spacing: 0; margin-left: 8px; opacity: 0.5; transition: opacity .15s;
   }
   #rpt-highlights-section:hover .rpt-edit-hint { opacity: 1; }
   #rpt-highlights[contenteditable]:hover { background: rgba(0,134,123,.05); border-radius: 4px; cursor: text; }
@@ -1427,11 +1428,18 @@ function openPDFReport() {
     { key:'grants', label:'Active Grants', color:'#00556f' },
     { key:'mentees', label:'Mentees', color:'#553178' }
   ];
-  document.getElementById('rpt-metrics').innerHTML = metricDefs.map(m => `
+  const facultyCount = facultyForYear(latestYear).length;
+  document.getElementById('rpt-metrics').innerHTML = metricDefs.map(m => {
+    const total = totals[m.key];
+    const avg = facultyCount > 0 ? total / facultyCount : 0;
+    const avgStr = Number.isInteger(avg) ? avg : avg.toFixed(1);
+    return `
     <div class="report-metric" style="border-top:3px solid ${m.color}">
-      <div class="rv" style="color:${m.color}">${totals[m.key]}</div>
+      <div class="rv" style="color:${m.color}">${total}</div>
       <div class="rl">${m.label}</div>
-    </div>`).join('');
+      <div class="ra">${avgStr} / person</div>
+    </div>`;
+  }).join('');
 
   // Trend table
   document.getElementById('rpt-trend-body').innerHTML = allYears.map(y => `
