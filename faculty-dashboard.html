@@ -810,7 +810,7 @@ function showView(view, btn) {
     document.getElementById('topbar-heading').appendChild(yearSel);
   } else {
     yearSel.classList.remove('year-in-title');
-    document.querySelector('.topbar-controls').insertBefore(yearSel, fsel);
+    document.getElementById('indivYearTabs').appendChild(yearSel);
   }
   rebuildYearSelect();
   if (view === 'overview') renderOverview();
@@ -1080,10 +1080,6 @@ function renderIndividual() {
     </div>
   `;
 
-
-  // Year tabs
-  const tabs = document.getElementById('indivYearTabs');
-  tabs.innerHTML = fYears.map(y => `<button class="year-tab ${y===year?'active':''}" onclick="setIndivYear(${y})">${y}</button>`).join('');
 
   // Stat cards
   const cardDefs2 = [
