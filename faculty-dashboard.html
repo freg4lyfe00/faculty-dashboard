@@ -677,13 +677,7 @@
       <h2>Division Totals — Most Recent Year</h2>
       <div class="report-grid" id="rpt-metrics"></div>
     </div>
-    <div class="report-section">
-      <h2>5-Year Trend Summary</h2>
-      <table id="rpt-trend-table">
-        <thead><tr><th>Year</th><th>Publications</th><th>Presentations</th><th>Active Grants</th><th>Mentees</th><th>Faculty Count</th></tr></thead>
-        <tbody id="rpt-trend-body"></tbody>
-      </table>
-    </div>
+
     <div class="report-section">
       <h2>Faculty Performance — Most Recent Year</h2>
       <table id="rpt-faculty-table">
@@ -1431,16 +1425,6 @@ function openPDFReport() {
   }).join('');
 
   // Trend table
-  document.getElementById('rpt-trend-body').innerHTML = allYears.map(y => `
-    <tr>
-      <td>${y}</td>
-      <td>${divisionTotal(y,'publications')}</td>
-      <td>${divisionTotal(y,'presentations')}</td>
-      <td>${divisionTotal(y,'grants')}</td>
-      <td>${divisionTotal(y,'mentees')}</td>
-      <td>${db.faculty.length}</td>
-    </tr>`).join('');
-
   // Faculty table
   document.getElementById('rpt-faculty-body').innerHTML = db.faculty.map(f => {
     const d = f.data[latestYear] || {};
