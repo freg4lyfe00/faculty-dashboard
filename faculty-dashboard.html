@@ -1534,6 +1534,17 @@ async function downloadWithData() {
   html = html.replace(/(<div[^>]*id="divisionName"[^>]*>)[^<]*/, `$1${divName}`);
   html = html.replace(/(<div[^>]*id="chiefName"[^>]*>)[^<]*/, `$1${chiefName}`);
 
+  // Strip Chart.js-baked canvas dimensions so charts re-render at the correct
+  // size on any screen — not locked to the Mac viewport where the file was saved
+  html = html.replace(/<canvas([^>]*)>/g, (match, attrs) => {
+    attrs = attrs.replace(/\s+width="\d+"/g, '').replace(/\s+height="\d+"/g, '');
+    attrs = attrs.replace(/(\s+style=")([^"]*)(")/g, (m, pre, s, post) => {
+      const maxH = s.match(/max-height\s*:\s*[^;"]*/);
+      return maxH ? `${pre}${maxH[0].trim()}${post}` : '';
+    });
+    return `<canvas${attrs}>`;
+  });
+
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const suggestedName = `Faculty Dashboard – ${divName}.html`;
 
