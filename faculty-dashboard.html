@@ -1395,7 +1395,7 @@ function openPDFReport() {
   const divName = document.getElementById('divisionName').textContent;
 
   document.getElementById('rpt-title').textContent = `Division Performance Report — ${divName}`;
-  document.getElementById('rpt-subtitle').textContent = `Reporting period: ${allYears[0]}–${latestYear} | Generated: ${new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}`;
+  document.getElementById('rpt-subtitle').textContent = `Reporting Year: ${latestYear}`;
 
   // Totals
   const totals = {};
