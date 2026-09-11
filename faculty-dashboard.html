@@ -460,7 +460,6 @@
             <button class="ctab" onclick="showCtab('grant',this)">💰 Active Grants</button>
             <button class="ctab" onclick="showCtab('talk',this)">🎤 Presentations</button>
             <button class="ctab" onclick="showCtab('mentee',this)">🎓 Mentees</button>
-            <button class="ctab" onclick="showCtab('universal',this)">🔑 Universal Principles</button>
           </div>
 
           <div id="ctab-pub" style="padding:20px;overflow-x:auto">
@@ -519,19 +518,6 @@
             </table>
           </div>
 
-          <div id="ctab-universal" style="display:none;padding:20px;overflow-x:auto">
-            <table class="ctable">
-              <thead><tr><th style="width:24%">Principle</th><th>Rule</th></tr></thead>
-              <tbody>
-                <tr><td><strong>Pre-count classification</strong></td><td>Every candidate item must be labeled <strong style="color:#065f46">INCLUDED</strong>, <strong style="color:#991b1b">EXCLUDED</strong>, or <strong style="color:var(--amber-fg)">AMBIGUOUS</strong> before being counted</td></tr>
-                <tr><td><strong>No inference rule</strong></td><td>Do not infer inclusion when evidence is insufficient; when in doubt → <strong style="color:var(--amber-fg)">AMBIGUOUS</strong> → exclude</td></tr>
-                <tr><td><strong>Year attribution</strong></td><td>Every item must receive a year label: <strong style="color:#065f46">✅ IN YEAR</strong> / <strong style="color:#991b1b">❌ OUT OF YEAR</strong> / <strong style="color:var(--amber-fg)">⚠️ UNCERTAIN</strong> before counting</td></tr>
-                <tr><td><strong>Evidence ID assignment</strong></td><td>Every INCLUDED item receives a unique ID: <code>PUB-##</code>, <code>GRANT-##</code>, <code>TALK-##</code>, or <code>MENTEE-##</code></td></tr>
-                <tr><td><strong>Highlight rule</strong></td><td>Supporting CV text is highlighted and the evidence ID is appended inline</td></tr>
-                <tr><td><strong>Count = ID validation</strong></td><td>Final reported count must equal the exact number of distinct evidence IDs — any mismatch = invalid output</td></tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>
