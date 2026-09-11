@@ -456,15 +456,15 @@
             prior to counting. When in doubt, exclude.
           </p>
           <div style="padding:0 20px;border-bottom:1px solid var(--border);display:flex;gap:0;overflow-x:auto">
-            <button class="ctab active" onclick="showCtab('pub',this)">📄 Publications</button>
-            <button class="ctab" onclick="showCtab('grant',this)">💰 Active Grants</button>
-            <button class="ctab" onclick="showCtab('talk',this)">🎤 Presentations</button>
-            <button class="ctab" onclick="showCtab('mentee',this)">🎓 Mentees</button>
+            <button class="ctab active" onclick="showCtab('pub',this)">Publications</button>
+            <button class="ctab" onclick="showCtab('grant',this)">Active Grants</button>
+            <button class="ctab" onclick="showCtab('talk',this)">Presentations</button>
+            <button class="ctab" onclick="showCtab('mentee',this)">Mentees</button>
           </div>
 
           <div id="ctab-pub" style="padding:20px;overflow-x:auto">
             <table class="ctable">
-              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">✅ Include</th><th class="th-exc">❌ Exclude</th><th class="th-amb">⚠️ Ambiguous</th></tr></thead>
+              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">Include</th><th class="th-exc">Exclude</th><th class="th-amb">Ambiguous</th></tr></thead>
               <tbody>
                 <tr><td><strong>Publication type</strong></td><td class="td-inc">Original empirical research articles</td><td class="td-exc">Editorials, commentaries, letters, book chapters, software/technical reports, corrections, narrative or systematic reviews</td><td class="td-amb">Cannot determine type from CV text</td></tr>
                 <tr><td><strong>Peer-review status</strong></td><td class="td-inc">Explicitly published in a peer-reviewed journal</td><td class="td-exc">Preprints (medRxiv, bioRxiv, SSRN); conference proceedings unless explicitly peer-reviewed</td><td class="td-amb">Peer-review status cannot be confirmed from CV</td></tr>
@@ -479,7 +479,7 @@
 
           <div id="ctab-grant" style="display:none;padding:20px;overflow-x:auto">
             <table class="ctable">
-              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">✅ Include</th><th class="th-exc">❌ Exclude</th><th class="th-amb">⚠️ Ambiguous</th></tr></thead>
+              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">Include</th><th class="th-exc">Exclude</th><th class="th-amb">Ambiguous</th></tr></thead>
               <tbody>
                 <tr><td><strong>Active during review year</strong></td><td class="td-inc">Start date ≤ review year ≤ end date</td><td class="td-exc">Grant ended before review year; grant starts after review year</td><td class="td-amb">—</td></tr>
                 <tr><td><strong>Date completeness</strong></td><td class="td-inc">Both start and end dates present</td><td class="td-exc">—</td><td class="td-amb">Only a start date with no end date → exclude</td></tr>
@@ -493,7 +493,7 @@
 
           <div id="ctab-talk" style="display:none;padding:20px;overflow-x:auto">
             <table class="ctable">
-              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">✅ Include</th><th class="th-exc">❌ Exclude</th><th class="th-amb">⚠️ Ambiguous</th></tr></thead>
+              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">Include</th><th class="th-exc">Exclude</th><th class="th-amb">Ambiguous</th></tr></thead>
               <tbody>
                 <tr><td><strong>Scope / reach</strong></td><td class="td-inc">National or international invited talks, presentations, or workshops</td><td class="td-exc">Local or departmental presentations</td><td class="td-amb">Scope cannot be determined from CV text</td></tr>
                 <tr><td><strong>Format</strong></td><td class="td-inc">Invited talks, presentations, workshops</td><td class="td-exc">Abstracts, posters</td><td class="td-amb">—</td></tr>
@@ -507,7 +507,7 @@
 
           <div id="ctab-mentee" style="display:none;padding:20px;overflow-x:auto">
             <table class="ctable">
-              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">✅ Include</th><th class="th-exc">❌ Exclude</th><th class="th-amb">⚠️ Ambiguous</th></tr></thead>
+              <thead><tr><th style="width:16%">Criterion</th><th class="th-inc">Include</th><th class="th-exc">Exclude</th><th class="th-amb">Ambiguous</th></tr></thead>
               <tbody>
                 <tr><td><strong>Active during review year</strong></td><td class="td-inc">Mentoring relationship overlaps the review year</td><td class="td-exc">Training/mentoring period ended before review year; mentee started after review year</td><td class="td-amb">—</td></tr>
                 <tr><td><strong>Open-ended ranges</strong></td><td class="td-inc">"Present" treated as CV date; confirmed to overlap review year</td><td class="td-exc">"Present" confirmed to fall before the review year</td><td class="td-amb">"Present" cannot be resolved against the review year</td></tr>
